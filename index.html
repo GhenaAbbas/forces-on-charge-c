@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Forces on Charge C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a lab bench — the charge board on the left, the instrument panel (charges, display switches, readout) on the right; stacks on phones. */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --fg: #1b2733;
+  --muted: #5d6b78;
+  --line: #d9dee4;
+  --grid: #e7ebef;
+  --axis: #8a96a2;
+  --accent: #6b2fa0;          /* net force + headings (the deck's purple) */
+  --pos: #d64545;             /* positive charge / its force */
+  --pos2: #df5fa8;            /* second positive charge (pink) */
+  --neg: #2479b9;             /* negative charge / its force */
+  --neg2: #4aa8df;            /* second negative charge (light blue) */
+  --on: #6b2fa0;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171d; --surface: #1a2129; --fg: #e8edf2; --muted: #9aa7b3; --line: #2c3742;
+    --grid: #222b34; --axis: #6f7d8a; --accent: #b98be6; --pos: #f06a6a; --pos2: #f08cc6;
+    --neg: #5aa9e6; --neg2: #8fd0f5; --on: #b98be6; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171d; --surface: #1a2129; --fg: #e8edf2; --muted: #9aa7b3; --line: #2c3742;
+  --grid: #222b34; --axis: #6f7d8a; --accent: #b98be6; --pos: #f06a6a; --pos2: #f08cc6;
+  --neg: #5aa9e6; --neg2: #8fd0f5; --on: #b98be6; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 28px; display: grid; gap: 14px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 18px; }
+h1 { font-size: 1.45rem; margin: 0; color: var(--accent); text-wrap: balance; }
+.sub { margin: 0; color: var(--muted); max-width: 62ch; }
+.bench { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.board { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px; min-width: 0; }
+.board svg { display: block; width: 100%; height: auto; touch-action: none; user-select: none; }
+.scale { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 0.85rem; padding: 4px 6px 0; flex-wrap: wrap; }
+.panel { display: grid; gap: 12px; min-width: 0; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
+.box h2 { margin: 0; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: inherit; cursor: pointer; }
+.preset { border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 999px; padding: 6px 12px; }
+.preset[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.charge-row { display: grid; grid-template-columns: 1.6rem auto minmax(0, 1fr) 4.2rem; align-items: center; gap: 10px; }
+.dot { width: 1.4rem; height: 1.4rem; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 0.95rem; border: 1.5px solid var(--fg); }
+.sign { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.sign button { border: 0; background: transparent; color: var(--fg); width: 2.1rem; height: 1.9rem; font-weight: 700; }
+.sign button[aria-pressed="true"] { background: var(--fg); color: var(--surface); }
+input[type="range"] { width: 100%; accent-color: var(--accent); min-width: 0; }
+.qval { font-family: var(--font-num); font-size: 0.9rem; text-align: right; font-variant-numeric: tabular-nums; }
+.toggles { display: flex; flex-wrap: wrap; gap: 8px; }
+.toggle { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; }
+.toggle input { accent-color: var(--on); width: 1rem; height: 1rem; margin: 0; }
+.readout { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+th, td { text-align: right; padding: 6px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 400; font-size: 0.8rem; }
+th:first-child, td:first-child { text-align: left; }
+td { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+td.name { font-family: var(--font-body); font-weight: 700; }
+tr.net td { border-bottom: 0; }
+.hint { color: var(--muted); font-size: 0.85rem; margin: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chg { cursor: grab; }
+.chg:active { cursor: grabbing; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Forces on Charge C</h1>
+    <p class="sub">Drag the charges. Change their signs and sizes. Switch on the forces, their components and the net force on the target charge C.</p>
+  </header>
+
+  <div class="bench">
+    <div class="board">
+      <svg id="svg" viewBox="0 0 650 500" role="img" aria-label="Charges A, B and C on a grid with the electrostatic forces on C"></svg>
+      <div class="scale"><span>1 square = 0.1 m</span><span>Right and up are +, left and down are −</span></div>
+    </div>
+
+    <div class="panel">
+      <section class="box" aria-labelledby="h-setups">
+        <h2 id="h-setups">Set-ups</h2>
+        <div class="presets" id="presets"></div>
+      </section>
+
+      <section class="box" aria-labelledby="h-charges">
+        <h2 id="h-charges">Charges</h2>
+        <div id="charges"></div>
+        <p class="hint">Drag a charge on the grid, or select it and use the arrow keys.</p>
+      </section>
+
+      <section class="box" aria-labelledby="h-show">
+        <h2 id="h-show">Show</h2>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="t-forces" checked> Forces</label>
+          <label class="toggle"><input type="checkbox" id="t-comp"> Components</label>
+          <label class="toggle"><input type="checkbox" id="t-angles"> Angles</label>
+          <label class="toggle"><input type="checkbox" id="t-values"> Values</label>
+          <label class="toggle"><input type="checkbox" id="t-net"> Net force</label>
+        </div>
+      </section>
+
+      <section class="box readout" aria-labelledby="h-read">
+        <h2 id="h-read">Forces on C</h2>
+        <table>
+          <thead><tr><th>Force</th><th>Size (N)</th><th>Angle with x-axis</th><th>x comp. (N)</th><th>y comp. (N)</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <p class="hint" id="readhint">Switch on Values to see the numbers.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var K = 8.99e9, U = 50, X0 = -6.5, Y1 = 5.5, COLS = 13, ROWS = 10;   // 1 square = 0.1 m
+  var SVGNS = "http://www.w3.org/2000/svg";
+  var svg = document.getElementById("svg");
+
+  var PRESETS = [
+    { name: "Set-up 1: right angle", A: [-3, 0, 4], B: [0, 3, 3], C: [0, 0, 3] },
+    { name: "Set-up 2: A moves", A: [-4, -3, 4], B: [0, 3, 3], C: [0, 0, 3] },
+    { name: "Set-up 3: both tilted", A: [-4, -3, 4], B: [3, -3, 5], C: [0, 0, 3] }
+  ];
+  var S = { A: {}, B: {}, C: {}, preset: 0, sel: null };
+  var T = {};
+  ["forces", "comp", "angles", "values", "net"].forEach(function (k) { T[k] = document.getElementById("t-" + k); });
+
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function sx(x) { return (x - X0) * U; }
+  function sy(y) { return (Y1 - y) * U; }
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function fmt(v) { var s = (Math.abs(v) < 0.005 ? 0 : v).toFixed(2); return v > 0.005 ? "+" + s : (v < -0.005 ? "−" + s.slice(1) : "0"); }
+  function fmtAbs(v) { return Math.abs(v).toFixed(2); }
+
+  // Colours follow the charge: + red, second + pink; − blue, second − light blue. The force takes its source's colour.
+  function colours() {
+    var cA = S.A.q > 0 ? css("--pos") : css("--neg");
+    var cB = S.B.q > 0 ? css("--pos") : css("--neg");
+    if ((S.A.q > 0) === (S.B.q > 0)) cB = S.B.q > 0 ? css("--pos2") : css("--neg2");
+    var cC = S.C.q > 0 ? css("--pos") : css("--neg");
+    return { A: cA, B: cB, C: cC };
+  }
+
+  function forceOn(src) {
+    var dx = (S.C.x - S[src].x) * 0.1, dy = (S.C.y - S[src].y) * 0.1;
+    var r = Math.hypot(dx, dy);
+    var F = K * Math.abs(S[src].q * S.C.q) * 1e-12 / (r * r);
+    var s = (S[src].q * S.C.q > 0) ? 1 : -1;     // repel: away from the source; attract: toward it
+    return { r: r, F: F, Fx: s * F * dx / r, Fy: s * F * dy / r };
+  }
+  function angleText(fx, fy) {
+    if (Math.abs(fx) < 1e-9 && Math.abs(fy) < 1e-9) return "—";
+    if (Math.abs(fx) < 1e-9) return fy > 0 ? "90° (straight up)" : "90° (straight down)";
+    var a = Math.atan(Math.abs(fy) / Math.abs(fx)) * 180 / Math.PI;
+    if (a < 0.05) return "0° (along " + (fx > 0 ? "+x" : "−x") + ")";
+    return a.toFixed(1) + "° " + (fy > 0 ? "above " : "below ") + (fx > 0 ? "+x" : "−x");
+  }
+
+  function arrow(g, x1, y1, x2, y2, col, w, dashed) {
+    var dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+    if (L < 4) return;
+    var ux = dx / L, uy = dy / L, h = 7 + w * 2.2;
+    el("line", { x1: x1, y1: y1, x2: x2 - ux * h * 0.8, y2: y2 - uy * h * 0.8, stroke: col, "stroke-width": w,
+      "stroke-dasharray": dashed ? "7 5" : "none", "stroke-linecap": "round" }, g);
+    el("polygon", { points: [x2, y2, x2 - ux * h - uy * h * 0.5, y2 - uy * h + ux * h * 0.5,
+      x2 - ux * h + uy * h * 0.5, y2 - uy * h - ux * h * 0.5].join(","), fill: col }, g);
+  }
+  function label(g, x, y, parts, col, anchor, size) {
+    var t = el("text", { x: x, y: y, fill: col, "font-size": size || 17, "font-weight": 700, "text-anchor": anchor || "start",
+      "font-family": "Atkinson Hyperlegible, Segoe UI, sans-serif", "dominant-baseline": "middle" }, g);
+    parts.forEach(function (p) {
+      var ts = el("tspan", {}, t);
+      if (p.sub) { ts.setAttribute("baseline-shift", "sub"); ts.setAttribute("font-size", (size || 17) * 0.7); }
+      ts.textContent = p.t;
+    });
+    return t;
+  }
+  function arc(g, cx, cy, r, a0, a1, col) {   // angles in degrees, physics orientation (counter-clockwise from +x)
+    var p0 = [cx + r * Math.cos(a0 * Math.PI / 180), cy - r * Math.sin(a0 * Math.PI / 180)];
+    var p1 = [cx + r * Math.cos(a1 * Math.PI / 180), cy - r * Math.sin(a1 * Math.PI / 180)];
+    var large = Math.abs(a1 - a0) > 180 ? 1 : 0, sweep = a1 > a0 ? 0 : 1;
+    el("path", { d: "M" + p0 + " A" + r + "," + r + " 0 " + large + "," + sweep + " " + p1, fill: "none", stroke: col, "stroke-width": 2 }, g);
+  }
+
+  function draw() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var col = colours(), grid = css("--grid"), axis = css("--axis"), fg = css("--fg"), acc = css("--accent");
+    var g = el("g", {}, svg);
+    el("rect", { x: 0, y: 0, width: COLS * U, height: ROWS * U, fill: css("--surface") }, g);
+    for (var i = 0; i <= COLS; i++) el("line", { x1: i * U, y1: 0, x2: i * U, y2: ROWS * U, stroke: grid, "stroke-width": 1 }, g);
+    for (var j = 0; j <= ROWS; j++) el("line", { x1: 0, y1: j * U, x2: COLS * U, y2: j * U, stroke: grid, "stroke-width": 1 }, g);
+    var cx = sx(S.C.x), cy = sy(S.C.y);
+    // axes through the target C
+    el("line", { x1: 0, y1: cy, x2: COLS * U, y2: cy, stroke: axis, "stroke-width": 1.4, "stroke-dasharray": "2 4" }, g);
+    el("line", { x1: cx, y1: 0, x2: cx, y2: ROWS * U, stroke: axis, "stroke-width": 1.4, "stroke-dasharray": "2 4" }, g);
+    label(g, COLS * U - 12, cy - 12, [{ t: "x" }], axis, "end", 15);
+    label(g, cx + 10, 14, [{ t: "y" }], axis, "start", 15);
+
+    var f = { A: forceOn("A"), B: forceOn("B") };
+    // lines from each source to C, with the distance
+    ["A", "B"].forEach(function (k) {
+      var px = sx(S[k].x), py = sy(S[k].y);
+      el("line", { x1: px, y1: py, x2: cx, y2: cy, stroke: axis, "stroke-width": 1.5, "stroke-dasharray": "6 5" }, g);
+      if (T.values.checked) {
+        var mx = (px + cx) / 2, my = (py + cy) / 2, nx = -(cy - py), ny = cx - px, nl = Math.hypot(nx, ny) || 1;
+        label(g, mx + nx / nl * 16, my + ny / nl * 16, [{ t: f[k].r.toFixed(2) + " m" }], css("--muted"), "middle", 17);
+      }
+    });
+
+    var Fmax = Math.max(f.A.F, f.B.F, 1e-12);
+    var Fn = { x: f.A.Fx + f.B.Fx, y: f.A.Fy + f.B.Fy };
+    if (T.net.checked) Fmax = Math.max(Fmax, Math.hypot(Fn.x, Fn.y));
+    var scale = 3.2 * U / Fmax;   // the largest arrow is 3.2 squares long
+    ["A", "B"].forEach(function (k) {   // an attraction points at its source: keep the arrow short of that charge
+      if (S[k].q * S.C.q < 0) scale = Math.min(scale, Math.max(0.8, f[k].r * 10 - 1.1) * U / f[k].F);
+    });
+    var fg2 = el("g", {}, svg);
+    if (T.forces.checked) {
+      ["A", "B"].forEach(function (k) {
+        var tx = cx + f[k].Fx * scale, ty = cy - f[k].Fy * scale;
+        if (T.comp.checked) {
+          arrow(fg2, cx, cy, tx, cy, col[k], 2.4, true);
+          arrow(fg2, tx, cy, tx, ty, col[k], 2.4, true);
+          var sxn = f[k].Fx >= 0 ? 1 : -1, syn = f[k].Fy >= 0 ? 1 : -1;
+          if (Math.abs(f[k].Fx) * scale > 18) label(fg2, (cx + tx) / 2, cy + 16 * syn, [{ t: "F" }, { t: k + ",x", sub: true }], col[k], "middle", 18);
+          if (Math.abs(f[k].Fy) * scale > 18) label(fg2, tx + 8 * sxn, (cy + ty) / 2, [{ t: "F" }, { t: k + ",y", sub: true }], col[k], sxn > 0 ? "start" : "end", 18);
+        }
+        if (T.angles.checked && Math.abs(f[k].Fx) > 1e-9 && Math.abs(f[k].Fy) > 1e-9) {
+          var a = Math.atan2(f[k].Fy, f[k].Fx) * 180 / Math.PI, ref = f[k].Fx > 0 ? 0 : (a > 0 ? 180 : -180);
+          arc(fg2, cx, cy, 34 + (k === "B" ? 12 : 0), ref, a, col[k]);
+          var mid = (ref + a) / 2 * Math.PI / 180, rr = 62 + (k === "B" ? 12 : 0);
+          label(fg2, cx + rr * Math.cos(mid), cy - rr * Math.sin(mid), [{ t: "θ" }, { t: k, sub: true }], col[k], "middle", 18);
+        }
+        arrow(fg2, cx, cy, tx, ty, col[k], 4, false);
+        var parts = [{ t: "F" }, { t: k, sub: true }];
+        if (T.values.checked) parts.push({ t: " = " + f[k].F.toFixed(2) + " N" });
+        var ux = f[k].Fx / (f[k].F || 1), uy = f[k].Fy / (f[k].F || 1);
+        label(fg2, tx + ux * 18, ty - uy * 18, parts, col[k], ux >= 0 ? "start" : "end", 20);
+      });
+    }
+    if (T.net.checked) {
+      var nx = cx + Fn.x * scale, ny = cy - Fn.y * scale, Fm = Math.hypot(Fn.x, Fn.y);
+      arrow(fg2, cx, cy, nx, ny, acc, 5, false);
+      var parts = [{ t: "F" }, { t: "net", sub: true }];
+      if (T.values.checked) parts.push({ t: " = " + Fm.toFixed(2) + " N" });
+      var ux2 = Fn.x / (Fm || 1), uy2 = Fn.y / (Fm || 1);
+      label(fg2, nx + ux2 * 18, ny - uy2 * 18, parts, acc, ux2 >= 0 ? "start" : "end", 20);
+    }
+
+    // charges on top
+    ["A", "B", "C"].forEach(function (k) {
+      var gc = el("g", { class: "chg", tabindex: 0, role: "button", "data-k": k,
+        "aria-label": "Charge " + k + ", " + (S[k].q > 0 ? "+" : "−") + Math.abs(S[k].q) + " microcoulombs. Use the arrow keys to move it." }, svg);
+      var px = sx(S[k].x), py = sy(S[k].y);
+      el("circle", { cx: px, cy: py, r: 19, fill: col[k], stroke: fg, "stroke-width": S.sel === k ? 3.5 : 2 }, gc);
+      label(gc, px, py + 1, [{ t: S[k].q > 0 ? "+" : "−" }], "#ffffff", "middle", 22);
+      // the name goes on the outer side, away from the forces at C: sources away from C, C away from the sources
+      var ox, oy;
+      if (k === "C") {   // opposite the forces on C, so the label never sits on an arrow
+        var fa = forceOn("A"), fb = forceOn("B");
+        ox = -(fa.Fx / (fa.F || 1) + fb.Fx / (fb.F || 1)); oy = -(fa.Fy / (fa.F || 1) + fb.Fy / (fb.F || 1));
+        if (Math.hypot(ox, oy) < 0.2) { ox = -0.7; oy = -0.7; }
+      }
+      else { ox = S[k].x - S.C.x; oy = S[k].y - S.C.y; }
+      var ol = Math.hypot(ox, oy) || 1; ox /= ol; oy /= ol;
+      label(gc, px + ox * 34, py - oy * 30, [{ t: k + "  " + (S[k].q > 0 ? "+" : "−") + Math.abs(S[k].q) + " μC" }], fg,
+            ox > 0.35 ? "start" : (ox < -0.35 ? "end" : "middle"), 18);
+    });
+    renderTable(f, Fn, col);
+  }
+
+  function renderTable(f, Fn, col) {
+    var rows = document.getElementById("rows"), show = T.values.checked;
+    document.getElementById("readhint").hidden = show;
+    var html = "";
+    ["A", "B"].forEach(function (k) {
+      html += "<tr><td class='name' style='color:" + col[k] + "'>F<sub>" + k + "</sub></td>" +
+        (show ? "<td>" + fmtAbs(f[k].F) + "</td><td>" + angleText(f[k].Fx, f[k].Fy) + "</td><td>" + fmt(f[k].Fx) + "</td><td>" + fmt(f[k].Fy) + "</td>"
+              : "<td>?</td><td>?</td><td>?</td><td>?</td>") + "</tr>";
+    });
+    var showNet = show && T.net.checked, Fm = Math.hypot(Fn.x, Fn.y);
+    html += "<tr class='net'><td class='name' style='color:var(--accent)'>F<sub>net</sub></td>" +
+      (showNet ? "<td>" + fmtAbs(Fm) + "</td><td>" + angleText(Fn.x, Fn.y) + "</td><td>" + fmt(Fn.x) + "</td><td>" + fmt(Fn.y) + "</td>"
+               : "<td>?</td><td>?</td><td>?</td><td>?</td>") + "</tr>";
+    rows.innerHTML = html;
+  }
+
+  // ----- charge controls
+  function buildControls() {
+    var box = document.getElementById("charges"); box.innerHTML = "";
+    var col = colours();
+    ["A", "B", "C"].forEach(function (k) {
+      var row = document.createElement("div"); row.className = "charge-row";
+      row.innerHTML = "<span class='dot' style='background:" + col[k] + "'>" + k + "</span>" +
+        "<span class='sign' role='group' aria-label='Sign of " + k + "'>" +
+        "<button type='button' id='s" + k + "p' aria-pressed='" + (S[k].q > 0) + "'>+</button>" +
+        "<button type='button' id='s" + k + "n' aria-pressed='" + (S[k].q < 0) + "'>−</button></span>" +
+        "<input type='range' id='m" + k + "' min='1' max='10' step='1' value='" + Math.abs(S[k].q) + "' aria-label='Size of charge " + k + " in microcoulombs'>" +
+        "<span class='qval' id='v" + k + "'>" + (S[k].q > 0 ? "+" : "−") + Math.abs(S[k].q) + " μC</span>";
+      box.appendChild(row);
+      document.getElementById("s" + k + "p").onclick = function () { S[k].q = Math.abs(S[k].q); update(); };
+      document.getElementById("s" + k + "n").onclick = function () { S[k].q = -Math.abs(S[k].q); update(); };
+      document.getElementById("m" + k).oninput = function (e) { S[k].q = (S[k].q > 0 ? 1 : -1) * Number(e.target.value); update(true); };
+    });
+  }
+  function update(keepControls) {
+    if (!keepControls) buildControls();
+    else {
+      var col = colours();
+      ["A", "B", "C"].forEach(function (k) {
+        document.getElementById("v" + k).textContent = (S[k].q > 0 ? "+" : "−") + Math.abs(S[k].q) + " μC";
+      });
+      document.querySelectorAll(".charge-row .dot").forEach(function (d, i) { d.style.background = col["ABC"[i]]; });
+    }
+    draw();
+  }
+  function loadPreset(i) {
+    var p = PRESETS[i]; S.preset = i;
+    ["A", "B", "C"].forEach(function (k) { S[k] = { x: p[k][0], y: p[k][1], q: p[k][2] }; });
+    document.querySelectorAll(".preset").forEach(function (b, j) { b.setAttribute("aria-pressed", String(j === i)); });
+    update();
+  }
+  var pbox = document.getElementById("presets");
+  PRESETS.forEach(function (p, i) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "preset"; b.id = "preset" + (i + 1);
+    b.textContent = p.name; b.onclick = function () { loadPreset(i); }; pbox.appendChild(b);
+  });
+  Object.keys(T).forEach(function (k) { T[k].onchange = draw; });
+
+  // ----- dragging (snaps to the grid; charges cannot sit on the same point)
+  function toGrid(evt) {
+    var pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+    var p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    return { x: Math.round(p.x / U + X0), y: Math.round(Y1 - p.y / U) };
+  }
+  function free(k, x, y) {
+    if (x < X0 + 0.5 || x > X0 + COLS - 0.5 || y < Y1 - ROWS + 0.5 || y > Y1 - 0.5) return false;
+    return ["A", "B", "C"].every(function (o) { return o === k || S[o].x !== x || S[o].y !== y; });
+  }
+  var drag = null;
+  svg.addEventListener("pointerdown", function (e) {
+    var g = e.target.closest(".chg"); if (!g) return;
+    drag = g.getAttribute("data-k"); S.sel = drag; svg.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  svg.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    var p = toGrid(e);
+    if ((p.x !== S[drag].x || p.y !== S[drag].y) && free(drag, p.x, p.y)) { S[drag].x = p.x; S[drag].y = p.y; markCustom(); draw(); }
+  });
+  svg.addEventListener("pointerup", function () { if (drag) { drag = null; draw(); } });
+  svg.addEventListener("keydown", function (e) {
+    var g = e.target.closest && e.target.closest(".chg"); if (!g) return;
+    var k = g.getAttribute("data-k"), d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    if (free(k, S[k].x + d[0], S[k].y + d[1])) { S[k].x += d[0]; S[k].y += d[1]; S.sel = k; markCustom(); draw();
+      var again = svg.querySelector('.chg[data-k="' + k + '"]'); if (again) again.focus(); }
+  });
+  function markCustom() { document.querySelectorAll(".preset").forEach(function (b) { b.setAttribute("aria-pressed", "false"); }); }
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { update(); });
+  new MutationObserver(function () { update(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // "#demo" opens Set-up 1 with every display switched on (used for the slide screenshot)
+  if (location.hash === "#demo") { Object.keys(T).forEach(function (k) { T[k].checked = true; }); }
+  loadPreset(0);
+})();
+</script>
+
+</body>
+</html>
